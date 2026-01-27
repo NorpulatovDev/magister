@@ -1,5 +1,22 @@
 package com.example.magister.service;
 
+import com.example.magister.dto.CreateUserRequest;
+import com.example.magister.dto.UpdateUserRequest;
+import com.example.magister.dto.UserDTO;
+import com.example.magister.entity.User;
+import com.example.magister.entity.UserRole;
+import com.example.magister.exception.BusinessException;
+import com.example.magister.exception.ResourceNotFoundException;
+import com.example.magister.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -88,7 +105,6 @@ public class UserService {
         dto.setPhone(user.getPhone());
         dto.setRole(user.getRole());
         dto.setActive(user.getActive());
-        dto.setCreatedAt(user.getCreatedAt());
         return dto;
     }
 }

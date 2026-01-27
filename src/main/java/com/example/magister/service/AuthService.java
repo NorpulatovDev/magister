@@ -1,10 +1,10 @@
 package com.example.magister.service;
 
-import com.education.crm.dto.*;
-import com.education.crm.entity.*;
-import com.education.crm.exception.*;
-import com.education.crm.repository.*;
-import com.education.crm.security.JwtTokenProvider;
+import com.example.magister.dto.*;
+import com.example.magister.entity.*;
+import com.example.magister.exception.*;
+import com.example.magister.repository.*;
+import com.example.magister.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -12,8 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -113,7 +111,6 @@ public class AuthService {
         dto.setPhone(user.getPhone());
         dto.setRole(user.getRole());
         dto.setActive(user.getActive());
-        dto.setCreatedAt(user.getCreatedAt());
         return dto;
     }
 }

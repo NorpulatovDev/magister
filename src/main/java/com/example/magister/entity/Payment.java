@@ -6,8 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
 
 @Entity
 @Table(name = "payments")
@@ -33,7 +33,7 @@ public class Payment {
     private Group group;
     
     @Column(nullable = false)
-    private Double amount;
+    private BigDecimal amount;
     
     @Column(nullable = false)
     private LocalDateTime paymentDate;

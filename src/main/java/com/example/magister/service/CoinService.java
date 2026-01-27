@@ -99,16 +99,15 @@ public class CoinService {
     }
 
     @Transactional(readOnly = true)
-    public CoinSummaryDTO getCoinSummary(Long studentId) {
+    public CoinSummary getCoinSummary(Long studentId) {
         List<Coin> coins = coinRepository.findByStudentId(studentId);
 
         Integer totalCoins = coins.stream()
                 .mapToInt(Coin::getAmount)
                 .sum();
 
-        CoinSummaryDTO summary = new CoinSummaryDTO();
+        CoinSummary summary = new CoinSummary();
         summary.setTotalCoins(totalCoins);
-        summary.setTotalTransactions(coins.size());
         summary.setRecentCoins(
                 coins.stream()
                         .sorted((a, b) -> b.getAwardedDate().compareTo(a.getAwardedDate()))

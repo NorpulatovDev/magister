@@ -7,7 +7,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
-
 public class CreatePaymentRequest {
     private Long studentId;
     private Long groupId;
