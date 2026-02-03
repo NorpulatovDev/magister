@@ -7,6 +7,8 @@ import com.example.magister.entity.User;
 import com.example.magister.entity.UserRole;
 import com.example.magister.exception.BusinessException;
 import com.example.magister.exception.ResourceNotFoundException;
+import com.example.magister.exception.UnauthorizedException;
+import com.example.magister.repository.GroupStudentRepository;
 import com.example.magister.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +26,7 @@ public class UserService {
     
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final GroupStudentRepository groupStudentRepository;
     
     @Transactional(readOnly = true)
     public List<UserDTO> getAllUsers() {
@@ -69,8 +72,24 @@ public class UserService {
     
     @Transactional
     public UserDTO updateUser(Long userId, UpdateUserRequest request) {
+        return updateUser(userId, request, null);
+    }
+    
+    @Transactional
+    public UserDTO updateUser(Long userId, UpdateUserRequest request, Long currentUserId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+        
+        // If currentUserId is provided, verify authorization
+        if (currentUserId != null && !currentUserId.equals(userId)) {
+            User currentUser = userRepository.findById(currentUserId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUserId));
+            
+            // Verify authorization based on role
+            if (!canUpdateUser(currentUser, user)) {
+                throw new UnauthorizedException("You don't have permission to update this user");
+            }
+        }
         
         if (request.getFullName() != null) {
             user.setFullName(request.getFullName());
@@ -83,7 +102,45 @@ public class UserService {
         }
         
         user = userRepository.save(user);
+        log.info("User updated: {} by user {}", userId, currentUserId);
         return mapToUserDTO(user);
+    }
+    
+    /**
+     * Check if currentUser can update targetUser
+     * Rules:
+     * - Admin can update anyone
+     * - Teacher can update their own students
+     * - Users can update themselves (handled by checking currentUserId == userId)
+     */
+    private boolean canUpdateUser(User currentUser, User targetUser) {
+        // Admin can update anyone
+        if (currentUser.getRole() == UserRole.ADMIN) {
+            return true;
+        }
+        
+        // Teacher can update students
+        if (currentUser.getRole() == UserRole.TEACHER && targetUser.getRole() == UserRole.STUDENT) {
+            // Check if student is enrolled in any of the teacher's groups
+            return isStudentOfTeacher(currentUser.getId(), targetUser.getId());
+        }
+        
+        // Otherwise, not authorized
+        return false;
+    }
+    
+    /**
+     * Check if a student is enrolled in any of the teacher's groups
+     */
+    private boolean isStudentOfTeacher(Long teacherId, Long studentId) {
+        // Get all groups taught by the teacher
+        List<Long> teacherGroupIds = groupStudentRepository.findByStudentId(studentId)
+                .stream()
+                .filter(gs -> gs.getGroup().getTeacher().getId().equals(teacherId))
+                .map(gs -> gs.getGroup().getId())
+                .collect(Collectors.toList());
+        
+        return !teacherGroupIds.isEmpty();
     }
     
     @Transactional

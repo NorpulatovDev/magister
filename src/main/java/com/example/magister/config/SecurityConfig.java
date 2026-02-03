@@ -38,10 +38,16 @@ public class SecurityConfig {
                                 "/swagger-resources/**",
                                 "/webjars/**"
                         ).permitAll()
-                        // Role-based endpoints
+                        // Admin-only endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // Teacher endpoints
                         .requestMatchers("/api/teacher/**").hasAnyRole("TEACHER", "ADMIN")
+                        // Student endpoints
                         .requestMatchers("/api/student/**").hasAnyRole("STUDENT", "ADMIN")
+                        // Allow teachers and admins to manage groups
+                        .requestMatchers("/api/groups/**").hasAnyRole("TEACHER", "ADMIN")
+                        // Allow teachers and admins to manage users (with service-layer authorization)
+                        .requestMatchers("/api/users/**").hasAnyRole("TEACHER", "ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

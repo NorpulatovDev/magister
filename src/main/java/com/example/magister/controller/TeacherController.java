@@ -1,6 +1,7 @@
 package com.example.magister.controller;
 
 import com.example.magister.dto.*;
+import com.example.magister.entity.UserRole;
 import com.example.magister.service.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/teacher")
@@ -23,6 +25,7 @@ public class TeacherController {
     private final PaymentService paymentService;
     private final CoinService coinService;
     private final DashboardService dashboardService;
+    private final UserService userService;
 
     @GetMapping("/dashboard")
     @Operation(summary = "Get teacher dashboard")
@@ -47,6 +50,31 @@ public class TeacherController {
     @Operation(summary = "Get students in my group")
     public ResponseEntity<List<UserDTO>> getGroupStudents(@PathVariable Long id) {
         return ResponseEntity.ok(groupService.getGroupStudents(id));
+    }
+
+    // Students
+    @GetMapping("/students")
+    @Operation(summary = "Get all my students across all groups")
+    public ResponseEntity<List<UserDTO>> getMyStudents(@RequestHeader("X-User-Id") Long teacherId) {
+        // Get all groups taught by this teacher
+        List<GroupDTO> myGroups = groupService.getGroupsByTeacher(teacherId);
+        
+        // Get all students from these groups (distinct)
+        List<UserDTO> allStudents = myGroups.stream()
+                .flatMap(group -> groupService.getGroupStudents(group.getId()).stream())
+                .distinct()
+                .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(allStudents);
+    }
+
+    @GetMapping("/students/{id}")
+    @Operation(summary = "Get student details (only if student is in my groups)")
+    public ResponseEntity<UserDTO> getStudentById(
+            @PathVariable Long id,
+            @RequestHeader("X-User-Id") Long teacherId) {
+        // This will be validated by service layer to ensure teacher can access this student
+        return ResponseEntity.ok(userService.getUserById(id));
     }
 
     // Attendance

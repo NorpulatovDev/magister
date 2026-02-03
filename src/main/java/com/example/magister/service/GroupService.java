@@ -12,6 +12,7 @@ import com.example.magister.entity.User;
 import com.example.magister.entity.UserRole;
 import com.example.magister.exception.BusinessException;
 import com.example.magister.exception.ResourceNotFoundException;
+import com.example.magister.exception.UnauthorizedException;
 import com.example.magister.repository.GroupRepository;
 import com.example.magister.repository.GroupStudentRepository;
 import com.example.magister.repository.UserRepository;
@@ -35,6 +36,11 @@ public class GroupService {
 
     @Transactional
     public GroupDTO createGroup(CreateGroupRequest request) {
+        return createGroup(request, null);
+    }
+
+    @Transactional
+    public GroupDTO createGroup(CreateGroupRequest request, Long currentUserId) {
         log.info("Creating group: {}", request.getName());
 
         User teacher = userRepository.findById(request.getTeacherId())
@@ -42,6 +48,19 @@ public class GroupService {
 
         if (teacher.getRole() != UserRole.TEACHER) {
             throw new BusinessException("User is not a teacher");
+        }
+
+        // If currentUserId is provided, verify authorization
+        if (currentUserId != null) {
+            User currentUser = userRepository.findById(currentUserId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUserId));
+            
+            // Teachers can only create groups for themselves
+            if (currentUser.getRole() == UserRole.TEACHER && 
+                !currentUser.getId().equals(request.getTeacherId())) {
+                throw new UnauthorizedException("Teachers can only create groups for themselves");
+            }
+            // Admins can create groups for any teacher
         }
 
         Group group = Group.builder()
@@ -61,8 +80,25 @@ public class GroupService {
 
     @Transactional
     public GroupDTO updateGroup(Long groupId, UpdateGroupRequest request) {
+        return updateGroup(groupId, request, null);
+    }
+
+    @Transactional
+    public GroupDTO updateGroup(Long groupId, UpdateGroupRequest request, Long currentUserId) {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new ResourceNotFoundException("Group", "id", groupId));
+
+        // If currentUserId is provided, verify authorization
+        if (currentUserId != null) {
+            User currentUser = userRepository.findById(currentUserId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUserId));
+            
+            // Teachers can only update their own groups
+            if (currentUser.getRole() == UserRole.TEACHER && 
+                !group.getTeacher().getId().equals(currentUserId)) {
+                throw new UnauthorizedException("You can only update your own groups");
+            }
+        }
 
         if (request.getName() != null) {
             group.setName(request.getName());
@@ -83,6 +119,11 @@ public class GroupService {
 
     @Transactional
     public void enrollStudent(Long groupId, Long studentId) {
+        enrollStudent(groupId, studentId, null);
+    }
+
+    @Transactional
+    public void enrollStudent(Long groupId, Long studentId, Long currentUserId) {
         log.info("Enrolling student {} in group {}", studentId, groupId);
 
         Group group = groupRepository.findById(groupId)
@@ -93,6 +134,18 @@ public class GroupService {
 
         if (student.getRole() != UserRole.STUDENT) {
             throw new BusinessException("User is not a student");
+        }
+
+        // If currentUserId is provided, verify authorization
+        if (currentUserId != null) {
+            User currentUser = userRepository.findById(currentUserId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUserId));
+            
+            // Teachers can only enroll students in their own groups
+            if (currentUser.getRole() == UserRole.TEACHER && 
+                !group.getTeacher().getId().equals(currentUserId)) {
+                throw new UnauthorizedException("You can only enroll students in your own groups");
+            }
         }
 
         if (groupStudentRepository.existsByGroupIdAndStudentId(groupId, studentId)) {
@@ -112,6 +165,26 @@ public class GroupService {
 
     @Transactional
     public void removeStudent(Long groupId, Long studentId) {
+        removeStudent(groupId, studentId, null);
+    }
+
+    @Transactional
+    public void removeStudent(Long groupId, Long studentId, Long currentUserId) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new ResourceNotFoundException("Group", "id", groupId));
+
+        // If currentUserId is provided, verify authorization
+        if (currentUserId != null) {
+            User currentUser = userRepository.findById(currentUserId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUserId));
+            
+            // Teachers can only remove students from their own groups
+            if (currentUser.getRole() == UserRole.TEACHER && 
+                !group.getTeacher().getId().equals(currentUserId)) {
+                throw new UnauthorizedException("You can only remove students from your own groups");
+            }
+        }
+
         GroupStudent enrollment = groupStudentRepository.findByGroupIdAndStudentId(groupId, studentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Enrollment", "groupId-studentId",
                         groupId + "-" + studentId));
