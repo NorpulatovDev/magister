@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -54,10 +55,10 @@ public class GroupService {
         if (currentUserId != null) {
             User currentUser = userRepository.findById(currentUserId)
                     .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUserId));
-            
+
             // Teachers can only create groups for themselves
-            if (currentUser.getRole() == UserRole.TEACHER && 
-                !currentUser.getId().equals(request.getTeacherId())) {
+            if (currentUser.getRole() == UserRole.TEACHER &&
+                    !currentUser.getId().equals(request.getTeacherId())) {
                 throw new UnauthorizedException("Teachers can only create groups for themselves");
             }
             // Admins can create groups for any teacher
@@ -70,6 +71,7 @@ public class GroupService {
                 .schedule(request.getSchedule())
                 .status(GroupStatus.ACTIVE)
                 .createdAt(LocalDateTime.now())
+                .students(new HashSet<>())
                 .build();
 
         group = groupRepository.save(group);
@@ -92,10 +94,10 @@ public class GroupService {
         if (currentUserId != null) {
             User currentUser = userRepository.findById(currentUserId)
                     .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUserId));
-            
+
             // Teachers can only update their own groups
-            if (currentUser.getRole() == UserRole.TEACHER && 
-                !group.getTeacher().getId().equals(currentUserId)) {
+            if (currentUser.getRole() == UserRole.TEACHER &&
+                    !group.getTeacher().getId().equals(currentUserId)) {
                 throw new UnauthorizedException("You can only update your own groups");
             }
         }
@@ -140,10 +142,10 @@ public class GroupService {
         if (currentUserId != null) {
             User currentUser = userRepository.findById(currentUserId)
                     .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUserId));
-            
+
             // Teachers can only enroll students in their own groups
-            if (currentUser.getRole() == UserRole.TEACHER && 
-                !group.getTeacher().getId().equals(currentUserId)) {
+            if (currentUser.getRole() == UserRole.TEACHER &&
+                    !group.getTeacher().getId().equals(currentUserId)) {
                 throw new UnauthorizedException("You can only enroll students in your own groups");
             }
         }
@@ -177,10 +179,10 @@ public class GroupService {
         if (currentUserId != null) {
             User currentUser = userRepository.findById(currentUserId)
                     .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUserId));
-            
+
             // Teachers can only remove students from their own groups
-            if (currentUser.getRole() == UserRole.TEACHER && 
-                !group.getTeacher().getId().equals(currentUserId)) {
+            if (currentUser.getRole() == UserRole.TEACHER &&
+                    !group.getTeacher().getId().equals(currentUserId)) {
                 throw new UnauthorizedException("You can only remove students from your own groups");
             }
         }
@@ -251,9 +253,16 @@ public class GroupService {
         dto.setTeacherName(group.getTeacher().getFullName());
         dto.setSchedule(group.getSchedule());
         dto.setStatus(group.getStatus());
-        dto.setStudentCount((int) group.getStudents().stream()
-                .filter(gs -> gs.getStatus() == EnrollmentStatus.ACTIVE)
-                .count());
+
+        // Safe null check for students set
+        if (group.getStudents() != null) {
+            dto.setStudentCount((int) group.getStudents().stream()
+                    .filter(gs -> gs.getStatus() == EnrollmentStatus.ACTIVE)
+                    .count());
+        } else {
+            dto.setStudentCount(0);
+        }
+
         dto.setCreatedAt(group.getCreatedAt());
         return dto;
     }

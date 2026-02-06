@@ -16,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,38 +24,38 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class UserService {
-    
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final GroupStudentRepository groupStudentRepository;
-    
+
     @Transactional(readOnly = true)
     public List<UserDTO> getAllUsers() {
         return userRepository.findAll().stream()
                 .map(this::mapToUserDTO)
                 .collect(Collectors.toList());
     }
-    
+
     @Transactional(readOnly = true)
     public List<UserDTO> getUsersByRole(UserRole role) {
         return userRepository.findByRole(role).stream()
                 .map(this::mapToUserDTO)
                 .collect(Collectors.toList());
     }
-    
+
     @Transactional(readOnly = true)
     public UserDTO getUserById(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
         return mapToUserDTO(user);
     }
-    
+
     @Transactional
     public UserDTO createUser(CreateUserRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new BusinessException("Email already exists");
         }
-        
+
         User user = User.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
@@ -62,50 +63,72 @@ public class UserService {
                 .phone(request.getPhone())
                 .role(request.getRole())
                 .active(true)
+                .createdAt(LocalDateTime.now())
                 .build();
-        
+
         user = userRepository.save(user);
         log.info("User created: {}", user.getEmail());
-        
+
         return mapToUserDTO(user);
     }
-    
+
     @Transactional
     public UserDTO updateUser(Long userId, UpdateUserRequest request) {
         return updateUser(userId, request, null);
     }
-    
+
     @Transactional
     public UserDTO updateUser(Long userId, UpdateUserRequest request, Long currentUserId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
-        
+
         // If currentUserId is provided, verify authorization
         if (currentUserId != null && !currentUserId.equals(userId)) {
             User currentUser = userRepository.findById(currentUserId)
                     .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUserId));
-            
+
             // Verify authorization based on role
             if (!canUpdateUser(currentUser, user)) {
                 throw new UnauthorizedException("You don't have permission to update this user");
             }
+
+            // Admins can update email, password, role, and active status
+            if (currentUser.getRole() == UserRole.ADMIN) {
+                if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
+                    // Check if new email already exists
+                    if (userRepository.existsByEmail(request.getEmail())) {
+                        throw new BusinessException("Email already exists");
+                    }
+                    user.setEmail(request.getEmail());
+                }
+
+                if (request.getPassword() != null && !request.getPassword().isEmpty()) {
+                    user.setPassword(passwordEncoder.encode(request.getPassword()));
+                }
+
+                if (request.getRole() != null) {
+                    user.setRole(request.getRole());
+                }
+
+                if (request.getActive() != null) {
+                    user.setActive(request.getActive());
+                }
+            }
         }
-        
+
+        // All users can update these fields
         if (request.getFullName() != null) {
             user.setFullName(request.getFullName());
         }
         if (request.getPhone() != null) {
             user.setPhone(request.getPhone());
         }
-        if (request.getActive() != null) {
-            user.setActive(request.getActive());
-        }
-        
+
         user = userRepository.save(user);
         log.info("User updated: {} by user {}", userId, currentUserId);
         return mapToUserDTO(user);
     }
-    
+
     /**
      * Check if currentUser can update targetUser
      * Rules:
@@ -118,17 +141,17 @@ public class UserService {
         if (currentUser.getRole() == UserRole.ADMIN) {
             return true;
         }
-        
+
         // Teacher can update students
         if (currentUser.getRole() == UserRole.TEACHER && targetUser.getRole() == UserRole.STUDENT) {
             // Check if student is enrolled in any of the teacher's groups
             return isStudentOfTeacher(currentUser.getId(), targetUser.getId());
         }
-        
+
         // Otherwise, not authorized
         return false;
     }
-    
+
     /**
      * Check if a student is enrolled in any of the teacher's groups
      */
@@ -139,21 +162,21 @@ public class UserService {
                 .filter(gs -> gs.getGroup().getTeacher().getId().equals(teacherId))
                 .map(gs -> gs.getGroup().getId())
                 .collect(Collectors.toList());
-        
+
         return !teacherGroupIds.isEmpty();
     }
-    
+
     @Transactional
     public void deleteUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
-        
+
         // Soft delete - just deactivate
         user.setActive(false);
         userRepository.save(user);
         log.info("User deactivated: {}", user.getEmail());
     }
-    
+
     private UserDTO mapToUserDTO(User user) {
         UserDTO dto = new UserDTO();
         dto.setId(user.getId());
