@@ -92,36 +92,26 @@ public class UserService {
                 throw new UnauthorizedException("You don't have permission to update this user");
             }
 
-            // Admins can update email, password, role, and active status
+            // Admins can update everything
             if (currentUser.getRole() == UserRole.ADMIN) {
-                if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
-                    // Check if new email already exists
-                    if (userRepository.existsByEmail(request.getEmail())) {
-                        throw new BusinessException("Email already exists");
-                    }
-                    user.setEmail(request.getEmail());
-                }
-
-                if (request.getPassword() != null && !request.getPassword().isEmpty()) {
-                    user.setPassword(passwordEncoder.encode(request.getPassword()));
-                }
-
-                if (request.getRole() != null) {
-                    user.setRole(request.getRole());
-                }
-
-                if (request.getActive() != null) {
-                    user.setActive(request.getActive());
+                updateAllFields(user, request);
+            }
+            // Teachers can update everything for their students (same as admin)
+            else if (currentUser.getRole() == UserRole.TEACHER && user.getRole() == UserRole.STUDENT) {
+                if (isStudentOfTeacher(currentUser.getId(), user.getId())) {
+                    updateAllFields(user, request);
+                } else {
+                    throw new UnauthorizedException("You can only update your own students");
                 }
             }
-        }
-
-        // All users can update these fields
-        if (request.getFullName() != null) {
-            user.setFullName(request.getFullName());
-        }
-        if (request.getPhone() != null) {
-            user.setPhone(request.getPhone());
+        } else {
+            // User updating themselves - only basic fields
+            if (request.getFullName() != null) {
+                user.setFullName(request.getFullName());
+            }
+            if (request.getPhone() != null) {
+                user.setPhone(request.getPhone());
+            }
         }
 
         user = userRepository.save(user);
@@ -130,10 +120,43 @@ public class UserService {
     }
 
     /**
+     * Update all user fields (for admin and teacher updating their students)
+     */
+    private void updateAllFields(User user, UpdateUserRequest request) {
+        if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
+            // Check if new email already exists
+            if (userRepository.existsByEmail(request.getEmail())) {
+                throw new BusinessException("Email already exists");
+            }
+            user.setEmail(request.getEmail());
+        }
+
+        if (request.getPassword() != null && !request.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+
+        if (request.getFullName() != null) {
+            user.setFullName(request.getFullName());
+        }
+
+        if (request.getPhone() != null) {
+            user.setPhone(request.getPhone());
+        }
+
+        if (request.getRole() != null) {
+            user.setRole(request.getRole());
+        }
+
+        if (request.getActive() != null) {
+            user.setActive(request.getActive());
+        }
+    }
+
+    /**
      * Check if currentUser can update targetUser
      * Rules:
      * - Admin can update anyone
-     * - Teacher can update their own students
+     * - Teacher can update their own students (with full permissions)
      * - Users can update themselves (handled by checking currentUserId == userId)
      */
     private boolean canUpdateUser(User currentUser, User targetUser) {
@@ -142,7 +165,7 @@ public class UserService {
             return true;
         }
 
-        // Teacher can update students
+        // Teacher can update students (with full permissions like admin)
         if (currentUser.getRole() == UserRole.TEACHER && targetUser.getRole() == UserRole.STUDENT) {
             // Check if student is enrolled in any of the teacher's groups
             return isStudentOfTeacher(currentUser.getId(), targetUser.getId());

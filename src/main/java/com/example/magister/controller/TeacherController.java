@@ -58,13 +58,13 @@ public class TeacherController {
     public ResponseEntity<List<UserDTO>> getMyStudents(@RequestHeader("X-User-Id") Long teacherId) {
         // Get all groups taught by this teacher
         List<GroupDTO> myGroups = groupService.getGroupsByTeacher(teacherId);
-        
+
         // Get all students from these groups (distinct)
         List<UserDTO> allStudents = myGroups.stream()
                 .flatMap(group -> groupService.getGroupStudents(group.getId()).stream())
                 .distinct()
                 .collect(Collectors.toList());
-        
+
         return ResponseEntity.ok(allStudents);
     }
 
@@ -75,6 +75,17 @@ public class TeacherController {
             @RequestHeader("X-User-Id") Long teacherId) {
         // This will be validated by service layer to ensure teacher can access this student
         return ResponseEntity.ok(userService.getUserById(id));
+    }
+
+    @PutMapping("/students/{id}")
+    @Operation(summary = "Update student details (same permissions as admin)")
+    public ResponseEntity<UserDTO> updateStudent(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateUserRequest request,
+            @RequestHeader("X-User-Id") Long teacherId) {
+        // Teachers have full update permissions for their students (email, password, etc.)
+        UserDTO updatedStudent = userService.updateUser(id, request, teacherId);
+        return ResponseEntity.ok(updatedStudent);
     }
 
     // Attendance
@@ -102,9 +113,15 @@ public class TeacherController {
         return ResponseEntity.ok(attendanceService.getAttendanceByGroup(groupId));
     }
 
+    @GetMapping("/attendance/student/{studentId}")
+    @Operation(summary = "Get attendance history for a specific student")
+    public ResponseEntity<List<AttendanceDTO>> getStudentAttendance(@PathVariable Long studentId) {
+        return ResponseEntity.ok(attendanceService.getAttendanceByStudent(studentId));
+    }
+
     // Payments
     @PostMapping("/payments")
-    @Operation(summary = "Record payment")
+    @Operation(summary = "Record payment (auto-confirmed, no admin approval needed)")
     public ResponseEntity<PaymentDTO> recordPayment(
             @Valid @RequestBody CreatePaymentRequest request,
             @RequestHeader("X-User-Id") Long teacherId) {
@@ -116,6 +133,18 @@ public class TeacherController {
     @Operation(summary = "Get my payments")
     public ResponseEntity<List<PaymentDTO>> getMyPayments(@RequestHeader("X-User-Id") Long teacherId) {
         return ResponseEntity.ok(paymentService.getPaymentsByTeacher(teacherId));
+    }
+
+    @GetMapping("/payments/student/{studentId}")
+    @Operation(summary = "Get payment history for a specific student")
+    public ResponseEntity<List<PaymentDTO>> getStudentPayments(@PathVariable Long studentId) {
+        return ResponseEntity.ok(paymentService.getPaymentsByStudent(studentId));
+    }
+
+    @GetMapping("/payments/group/{groupId}")
+    @Operation(summary = "Get payments for a specific group")
+    public ResponseEntity<List<PaymentDTO>> getGroupPayments(@PathVariable Long groupId) {
+        return ResponseEntity.ok(paymentService.getPaymentsByGroup(groupId));
     }
 
     @GetMapping("/payments/stats")
@@ -132,6 +161,12 @@ public class TeacherController {
             @RequestHeader("X-User-Id") Long teacherId) {
         CoinDTO coin = coinService.awardCoins(request, teacherId);
         return ResponseEntity.status(HttpStatus.CREATED).body(coin);
+    }
+
+    @GetMapping("/coins/student/{studentId}")
+    @Operation(summary = "Get coins for a specific student")
+    public ResponseEntity<List<CoinDTO>> getStudentCoins(@PathVariable Long studentId) {
+        return ResponseEntity.ok(coinService.getCoinsByStudent(studentId));
     }
 
     @GetMapping("/coins/group/{groupId}")

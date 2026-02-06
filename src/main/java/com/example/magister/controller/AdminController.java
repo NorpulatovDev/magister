@@ -93,13 +93,6 @@ public class AdminController {
         return ResponseEntity.ok(groupService.getGroupStudents(id));
     }
 
-    // Payment Management
-    @GetMapping("/payments/pending")
-    @Operation(summary = "Get pending payments")
-    public ResponseEntity<List<PaymentDTO>> getPendingPayments() {
-        return ResponseEntity.ok(paymentService.getPendingPayments());
-    }
-
     @PostMapping("/payments/{id}/confirm")
     @Operation(summary = "Confirm payment")
     public ResponseEntity<PaymentDTO> confirmPayment(
