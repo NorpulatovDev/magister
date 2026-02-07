@@ -52,6 +52,14 @@ public class AdminController {
         return ResponseEntity.ok(userService.getUsersByRole(role));
     }
 
+    @GetMapping("/students/orphaned")
+    @Operation(summary = "Get orphaned students", 
+               description = "Returns students who are not enrolled in any active group. " +
+                           "These are 'lost' students created but never added to a group.")
+    public ResponseEntity<List<UserDTO>> getOrphanedStudents() {
+        return ResponseEntity.ok(userService.getOrphanedStudents());
+    }
+
     @PostMapping("/users")
     @Operation(summary = "Create new user")
     public ResponseEntity<UserDTO> createUser(@Valid @RequestBody CreateUserRequest request) {

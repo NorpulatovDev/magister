@@ -131,6 +131,12 @@ public class PaymentService {
                         .collect(Collectors.toList());
         }
 
+        @Transactional(readOnly = true)
+        public List<PaymentDTO> getPendingPayments() {
+                return paymentRepository.findByConfirmedByAdmin(false).stream()
+                        .map(this::mapToPaymentDTO)
+                        .collect(Collectors.toList());
+        }
 
         @Transactional(readOnly = true)
         public PaymentStatsDTO getPaymentStats(Long teacherId) {

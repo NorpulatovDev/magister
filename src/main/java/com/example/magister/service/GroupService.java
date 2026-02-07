@@ -244,6 +244,11 @@ public class GroupService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * OPTIMIZATSIYA QILINGAN: Group entity ni DTO ga map qilish
+     * Avval: group.getStudents() ishlatib, Lazy Loading tufayli 0 qaytardi
+     * Hozir: GroupStudentRepository dan to'g'ridan-to'g'ri count oladi
+     */
     private GroupDTO mapToGroupDTO(Group group) {
         GroupDTO dto = new GroupDTO();
         dto.setId(group.getId());
@@ -254,14 +259,13 @@ public class GroupService {
         dto.setSchedule(group.getSchedule());
         dto.setStatus(group.getStatus());
 
-        // Safe null check for students set
-        if (group.getStudents() != null) {
-            dto.setStudentCount((int) group.getStudents().stream()
-                    .filter(gs -> gs.getStatus() == EnrollmentStatus.ACTIVE)
-                    .count());
-        } else {
-            dto.setStudentCount(0);
-        }
+        // YECHIM: Repository dan to'g'ridan-to'g'ri count olamiz
+        // Bu Lazy Loading muammosini hal qiladi va performance yaxshiroq
+        Integer studentCount = groupStudentRepository.countByGroupIdAndStatus(
+                group.getId(), 
+                EnrollmentStatus.ACTIVE
+        );
+        dto.setStudentCount(studentCount != null ? studentCount : 0);
 
         dto.setCreatedAt(group.getCreatedAt());
         return dto;
