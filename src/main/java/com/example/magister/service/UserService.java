@@ -45,22 +45,22 @@ public class UserService {
     }
 
     /**
-     * Guruhsiz (orphaned) o'quvchilarni topish
+     * YANGI: Guruhsiz (orphaned) o'quvchilarni topish
      * Bu o'quvchilar yaratilgan, lekin hech qaysi guruhga qo'shilmagan
      */
     @Transactional(readOnly = true)
     public List<UserDTO> getOrphanedStudents() {
         log.info("Fetching orphaned students (students not enrolled in any active group)");
-
+        
         List<User> allStudents = userRepository.findByRole(UserRole.STUDENT);
-
+        
         return allStudents.stream()
                 .filter(student -> {
                     // Check if student has any ACTIVE enrollments
                     return groupStudentRepository.findByStudentIdAndStatus(
-                            student.getId(),
+                            student.getId(), 
                             EnrollmentStatus.ACTIVE
-                    ).isEmpty();
+                    ).isEmpty(); // True if no active enrollments
                 })
                 .map(this::mapToUserDTO)
                 .collect(Collectors.toList());
@@ -142,12 +142,8 @@ public class UserService {
         return mapToUserDTO(user);
     }
 
-    /**
-     * Update all user fields (for admin and teacher updating their students)
-     */
     private void updateAllFields(User user, UpdateUserRequest request) {
         if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
-            // Check if new email already exists
             if (userRepository.existsByEmail(request.getEmail())) {
                 throw new BusinessException("Email already exists");
             }
@@ -175,34 +171,19 @@ public class UserService {
         }
     }
 
-    /**
-     * Check if currentUser can update targetUser
-     * Rules:
-     * - Admin can update anyone
-     * - Teacher can update their own students (with full permissions)
-     * - Users can update themselves (handled by checking currentUserId == userId)
-     */
     private boolean canUpdateUser(User currentUser, User targetUser) {
-        // Admin can update anyone
         if (currentUser.getRole() == UserRole.ADMIN) {
             return true;
         }
 
-        // Teacher can update students (with full permissions like admin)
         if (currentUser.getRole() == UserRole.TEACHER && targetUser.getRole() == UserRole.STUDENT) {
-            // Check if student is enrolled in any of the teacher's groups
             return isStudentOfTeacher(currentUser.getId(), targetUser.getId());
         }
 
-        // Otherwise, not authorized
         return false;
     }
 
-    /**
-     * Check if a student is enrolled in any of the teacher's groups
-     */
     private boolean isStudentOfTeacher(Long teacherId, Long studentId) {
-        // Get all groups taught by the teacher
         List<Long> teacherGroupIds = groupStudentRepository.findByStudentId(studentId)
                 .stream()
                 .filter(gs -> gs.getGroup().getTeacher().getId().equals(teacherId))
@@ -217,7 +198,6 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
-        // Soft delete - just deactivate
         user.setActive(false);
         userRepository.save(user);
         log.info("User deactivated: {}", user.getEmail());
