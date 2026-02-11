@@ -3,6 +3,7 @@ package com.example.magister.service;
 import com.example.magister.dto.CreateUserRequest;
 import com.example.magister.dto.UpdateUserRequest;
 import com.example.magister.dto.UserDTO;
+import com.example.magister.entity.EnrollmentStatus;
 import com.example.magister.entity.User;
 import com.example.magister.entity.UserRole;
 import com.example.magister.exception.BusinessException;
@@ -39,6 +40,28 @@ public class UserService {
     @Transactional(readOnly = true)
     public List<UserDTO> getUsersByRole(UserRole role) {
         return userRepository.findByRole(role).stream()
+                .map(this::mapToUserDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Guruhsiz (orphaned) o'quvchilarni topish
+     * Bu o'quvchilar yaratilgan, lekin hech qaysi guruhga qo'shilmagan
+     */
+    @Transactional(readOnly = true)
+    public List<UserDTO> getOrphanedStudents() {
+        log.info("Fetching orphaned students (students not enrolled in any active group)");
+
+        List<User> allStudents = userRepository.findByRole(UserRole.STUDENT);
+
+        return allStudents.stream()
+                .filter(student -> {
+                    // Check if student has any ACTIVE enrollments
+                    return groupStudentRepository.findByStudentIdAndStatus(
+                            student.getId(),
+                            EnrollmentStatus.ACTIVE
+                    ).isEmpty();
+                })
                 .map(this::mapToUserDTO)
                 .collect(Collectors.toList());
     }
