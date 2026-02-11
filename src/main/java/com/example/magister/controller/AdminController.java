@@ -54,8 +54,7 @@ public class AdminController {
 
     @GetMapping("/students/orphaned")
     @Operation(summary = "Get orphaned students", 
-               description = "Returns students who are not enrolled in any active group. " +
-                           "These are 'lost' students created but never added to a group.")
+               description = "Returns students who are not enrolled in any active group.")
     public ResponseEntity<List<UserDTO>> getOrphanedStudents() {
         return ResponseEntity.ok(userService.getOrphanedStudents());
     }
@@ -99,14 +98,6 @@ public class AdminController {
     @Operation(summary = "Get students in group")
     public ResponseEntity<List<UserDTO>> getGroupStudents(@PathVariable Long id) {
         return ResponseEntity.ok(groupService.getGroupStudents(id));
-    }
-
-    @PostMapping("/payments/{id}/confirm")
-    @Operation(summary = "Confirm payment")
-    public ResponseEntity<PaymentDTO> confirmPayment(
-            @PathVariable Long id,
-            @RequestHeader("X-User-Id") Long adminId) {
-        return ResponseEntity.ok(paymentService.confirmPayment(id, adminId));
     }
 
     @GetMapping("/payments/teacher/{teacherId}")

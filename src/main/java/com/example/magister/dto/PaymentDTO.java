@@ -18,9 +18,6 @@ public class PaymentDTO {
     private BigDecimal amount;
     private LocalDateTime paymentDate;
     private PaymentMethod method;
-    private Boolean confirmedByAdmin;
     private String notes;
     private LocalDateTime createdAt;
-    private String confirmedBy;
-    private LocalDateTime confirmedAt;
 }

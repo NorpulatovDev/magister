@@ -83,10 +83,7 @@ public class DashboardService {
                 .filter(g -> g.getStatus() == GroupStatus.ACTIVE)
                 .count());
 
-        // Get pending payments
-        List<PaymentDTO> pendingPayments = paymentService.getPendingPayments();
-        dashboard.setPendingPayments(pendingPayments);
-        dashboard.setPendingPaymentsCount(pendingPayments.size());
+        // Removed pending payments logic as the feature is deleted
 
         return dashboard;
     }

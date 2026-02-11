@@ -15,11 +15,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     List<Payment> findByGroupId(Long groupId);
 
-    List<Payment> findByConfirmedByAdmin(Boolean confirmed);
-
-    @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.teacher.id = :teacherId AND p.confirmedByAdmin = true")
-    Double getTotalConfirmedPaymentsByTeacher(Long teacherId);
-
     @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.student.id = :studentId")
     Double getTotalPaymentsByStudent(Long studentId);
 }

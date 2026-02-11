@@ -42,15 +42,6 @@ public class Payment {
     @Column(nullable = false)
     private PaymentMethod method;
     
-    @Column(nullable = false)
-    private Boolean confirmedByAdmin = false;
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "confirmed_by_id")
-    private User confirmedBy;
-    
-    private LocalDateTime confirmedAt;
-    
     private String notes;
     
     @Column(nullable = false, updatable = false)
