@@ -4,6 +4,7 @@ import com.example.magister.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -24,13 +25,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.disable()) // CORS is handled by CorsConfig
+                .cors(Customizer.withDefaults()) // CorsConfig dan foydalanadi
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
-                        // Swagger UI endpoints
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
@@ -38,15 +37,10 @@ public class SecurityConfig {
                                 "/swagger-resources/**",
                                 "/webjars/**"
                         ).permitAll()
-                        // Admin-only endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        // Teacher endpoints
                         .requestMatchers("/api/teacher/**").hasAnyRole("TEACHER", "ADMIN")
-                        // Student endpoints
                         .requestMatchers("/api/student/**").hasAnyRole("STUDENT", "ADMIN")
-                        // Allow teachers and admins to manage groups
                         .requestMatchers("/api/groups/**").hasAnyRole("TEACHER", "ADMIN")
-                        // Allow teachers and admins to manage users (with service-layer authorization)
                         .requestMatchers("/api/users/**").hasAnyRole("TEACHER", "ADMIN")
                         .anyRequest().authenticated()
                 )
