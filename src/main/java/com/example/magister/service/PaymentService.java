@@ -3,6 +3,7 @@ package com.example.magister.service;
 import com.example.magister.dto.CreatePaymentRequest;
 import com.example.magister.dto.PaymentDTO;
 import com.example.magister.dto.PaymentStatsDTO;
+import com.example.magister.dto.UpdatePaymentRequest;
 import com.example.magister.entity.EnrollmentStatus;
 import com.example.magister.entity.Group;
 import com.example.magister.entity.Payment;
@@ -96,6 +97,55 @@ public class PaymentService {
         return paymentRepository.findByGroupId(groupId).stream()
                 .map(this::mapToPaymentDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public PaymentDTO updatePayment(Long paymentId, UpdatePaymentRequest request, Long teacherId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment", "id", paymentId));
+
+        if (!payment.getTeacher().getId().equals(teacherId)) {
+            throw new UnauthorizedException("You can only update your own payments");
+        }
+
+        if (request.getAmount() != null) {
+            payment.setAmount(request.getAmount());
+        }
+        if (request.getPaymentDate() != null) {
+            payment.setPaymentDate(request.getPaymentDate());
+        }
+        if (request.getMethod() != null) {
+            payment.setMethod(request.getMethod());
+        }
+        if (request.getNotes() != null) {
+            payment.setNotes(request.getNotes());
+        }
+
+        payment = paymentRepository.save(payment);
+        log.info("Payment {} updated by teacher {}", paymentId, teacherId);
+        return mapToPaymentDTO(payment);
+    }
+
+    @Transactional
+    public void deletePayment(Long paymentId, Long teacherId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment", "id", paymentId));
+
+        if (!payment.getTeacher().getId().equals(teacherId)) {
+            throw new UnauthorizedException("You can only delete your own payments");
+        }
+
+        paymentRepository.delete(payment);
+        log.info("Payment {} deleted by teacher {}", paymentId, teacherId);
+    }
+
+    @Transactional
+    public void deletePaymentByAdmin(Long paymentId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment", "id", paymentId));
+
+        paymentRepository.delete(payment);
+        log.info("Payment {} deleted by admin", paymentId);
     }
 
     @Transactional(readOnly = true)

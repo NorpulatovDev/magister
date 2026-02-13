@@ -146,6 +146,24 @@ public class TeacherController {
         return ResponseEntity.status(HttpStatus.CREATED).body(payment);
     }
 
+    @PutMapping("/payments/{id}")
+    @Operation(summary = "Update payment")
+    public ResponseEntity<PaymentDTO> updatePayment(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdatePaymentRequest request,
+            @RequestHeader("X-User-Id") Long teacherId) {
+        return ResponseEntity.ok(paymentService.updatePayment(id, request, teacherId));
+    }
+
+    @DeleteMapping("/payments/{id}")
+    @Operation(summary = "Delete payment")
+    public ResponseEntity<Void> deletePayment(
+            @PathVariable Long id,
+            @RequestHeader("X-User-Id") Long teacherId) {
+        paymentService.deletePayment(id, teacherId);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/payments")
     @Operation(summary = "Get my payments")
     public ResponseEntity<List<PaymentDTO>> getMyPayments(@RequestHeader("X-User-Id") Long teacherId) {

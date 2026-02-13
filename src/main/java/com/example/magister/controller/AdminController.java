@@ -118,6 +118,13 @@ public class AdminController {
         return ResponseEntity.ok(paymentService.getPaymentsByGroup(groupId));
     }
 
+    @DeleteMapping("/payments/{id}")
+    @Operation(summary = "Delete any payment")
+    public ResponseEntity<Void> deletePayment(@PathVariable Long id) {
+        paymentService.deletePaymentByAdmin(id);
+        return ResponseEntity.noContent().build();
+    }
+
     // Attendance Management
     @GetMapping("/attendance/group/{groupId}")
     @Operation(summary = "Get attendance by group")
