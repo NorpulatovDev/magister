@@ -140,6 +140,63 @@ public class PaymentService {
     }
 
     @Transactional
+    public PaymentDTO createPaymentByAdmin(CreatePaymentRequest request) {
+        log.info("Admin creating payment for student {} in group {}",
+                request.getStudentId(), request.getGroupId());
+
+        User student = userRepository.findById(request.getStudentId())
+                .orElseThrow(() -> new ResourceNotFoundException("Student", "id", request.getStudentId()));
+
+        Group group = groupRepository.findById(request.getGroupId())
+                .orElseThrow(() -> new ResourceNotFoundException("Group", "id", request.getGroupId()));
+
+        User teacher = group.getTeacher();
+
+        if (!groupStudentRepository.existsByGroupIdAndStudentIdAndStatus(
+                request.getGroupId(), request.getStudentId(), EnrollmentStatus.ACTIVE)) {
+            throw new BusinessException("Student is not enrolled in this group");
+        }
+
+        Payment payment = Payment.builder()
+                .student(student)
+                .teacher(teacher)
+                .group(group)
+                .amount(request.getAmount())
+                .paymentDate(request.getPaymentDate())
+                .method(request.getMethod())
+                .notes(request.getNotes())
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        payment = paymentRepository.save(payment);
+        log.info("Payment created by admin");
+        return mapToPaymentDTO(payment);
+    }
+
+    @Transactional
+    public PaymentDTO updatePaymentByAdmin(Long paymentId, UpdatePaymentRequest request) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment", "id", paymentId));
+
+        if (request.getAmount() != null) {
+            payment.setAmount(request.getAmount());
+        }
+        if (request.getPaymentDate() != null) {
+            payment.setPaymentDate(request.getPaymentDate());
+        }
+        if (request.getMethod() != null) {
+            payment.setMethod(request.getMethod());
+        }
+        if (request.getNotes() != null) {
+            payment.setNotes(request.getNotes());
+        }
+
+        payment = paymentRepository.save(payment);
+        log.info("Payment {} updated by admin", paymentId);
+        return mapToPaymentDTO(payment);
+    }
+
+    @Transactional
     public void deletePaymentByAdmin(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment", "id", paymentId));

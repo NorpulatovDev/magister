@@ -100,6 +100,20 @@ public class AdminController {
         return ResponseEntity.ok(groupService.getGroupStudents(id));
     }
 
+    @PostMapping("/payments")
+    @Operation(summary = "Create payment for any group")
+    public ResponseEntity<PaymentDTO> createPayment(@Valid @RequestBody CreatePaymentRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.createPaymentByAdmin(request));
+    }
+
+    @PutMapping("/payments/{id}")
+    @Operation(summary = "Update any payment")
+    public ResponseEntity<PaymentDTO> updatePayment(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdatePaymentRequest request) {
+        return ResponseEntity.ok(paymentService.updatePaymentByAdmin(id, request));
+    }
+
     @GetMapping("/payments/teacher/{teacherId}")
     @Operation(summary = "Get payments by teacher")
     public ResponseEntity<List<PaymentDTO>> getPaymentsByTeacher(@PathVariable Long teacherId) {
