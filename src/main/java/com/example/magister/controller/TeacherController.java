@@ -53,6 +53,15 @@ public class TeacherController {
     }
 
     // Students
+    @PostMapping("/students")
+    @Operation(summary = "Create a new student")
+    public ResponseEntity<UserDTO> createStudent(
+            @Valid @RequestBody CreateUserRequest request) {
+        request.setRole(UserRole.STUDENT);
+        UserDTO student = userService.createUser(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(student);
+    }
+
     @GetMapping("/students")
     @Operation(summary = "Get all my students across all groups")
     public ResponseEntity<List<UserDTO>> getMyStudents(@RequestHeader("X-User-Id") Long teacherId) {
@@ -83,9 +92,17 @@ public class TeacherController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateUserRequest request,
             @RequestHeader("X-User-Id") Long teacherId) {
-        // Teachers have full update permissions for their students (email, password, etc.)
         UserDTO updatedStudent = userService.updateUser(id, request, teacherId);
         return ResponseEntity.ok(updatedStudent);
+    }
+
+    @DeleteMapping("/students/{id}")
+    @Operation(summary = "Delete student (only your own students)")
+    public ResponseEntity<Void> deleteStudent(
+            @PathVariable Long id,
+            @RequestHeader("X-User-Id") Long teacherId) {
+        userService.deleteUser(id, teacherId);
+        return ResponseEntity.noContent().build();
     }
 
     // Attendance

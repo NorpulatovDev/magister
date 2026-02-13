@@ -18,4 +18,8 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
     @Query("SELECT a FROM Attendance a WHERE a.student.id = :studentId AND a.group.id = :groupId")
     List<Attendance> findByStudentIdAndGroupId(Long studentId, Long groupId);
+
+    void deleteByStudentId(Long studentId);
+
+    void deleteByMarkedById(Long markedById);
 }

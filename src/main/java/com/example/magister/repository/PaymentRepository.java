@@ -17,4 +17,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.student.id = :studentId")
     Double getTotalPaymentsByStudent(Long studentId);
+
+    void deleteByStudentId(Long studentId);
+
+    void deleteByTeacherId(Long teacherId);
 }

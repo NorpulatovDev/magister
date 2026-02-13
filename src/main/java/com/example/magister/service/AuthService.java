@@ -33,10 +33,6 @@ public class AuthService {
             throw new BusinessException("Invalid email or password");
         }
         
-        if (!user.getActive()) {
-            throw new BusinessException("Account is inactive. Please contact administrator.");
-        }
-        
         String token = tokenProvider.generateToken(user.getEmail(), user.getId(), user.getRole().name());
         
         log.info("User {} logged in successfully", user.getEmail());
@@ -65,7 +61,6 @@ public class AuthService {
                 .fullName(request.getFullName())
                 .phone(request.getPhone())
                 .role(request.getRole())
-                .active(true)
                 .createdAt(LocalDateTime.now())
                 .build();
         
@@ -110,7 +105,6 @@ public class AuthService {
         dto.setFullName(user.getFullName());
         dto.setPhone(user.getPhone());
         dto.setRole(user.getRole());
-        dto.setActive(user.getActive());
         return dto;
     }
 }

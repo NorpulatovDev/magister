@@ -43,7 +43,7 @@ public class Payment {
     private PaymentMethod method;
     
     private String notes;
-    
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 }

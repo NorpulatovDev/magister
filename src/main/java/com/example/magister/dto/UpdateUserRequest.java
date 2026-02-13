@@ -10,5 +10,4 @@ public class UpdateUserRequest {
       private String email; // for admin and teacher updates
       private String password; // for admin and teacher updates
       private UserRole role; // for admin updates
-      private Boolean active; // for admin and teacher updates
 }

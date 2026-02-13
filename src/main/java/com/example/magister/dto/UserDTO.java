@@ -10,5 +10,4 @@ public class UserDTO {
     private String fullName;
     private String phone;
     private UserRole role;
-    private Boolean active;
 }

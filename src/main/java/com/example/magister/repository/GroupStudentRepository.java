@@ -29,4 +29,6 @@ public interface GroupStudentRepository extends JpaRepository<GroupStudent, Long
     // YANGI: Guruhda active o'quvchilar sonini olish uchun
     @Query("SELECT COUNT(gs) FROM GroupStudent gs WHERE gs.group.id = :groupId AND gs.status = :status")
     Integer countByGroupIdAndStatus(Long groupId, EnrollmentStatus status);
+
+    void deleteByStudentId(Long studentId);
 }

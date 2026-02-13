@@ -3,14 +3,11 @@ package com.example.magister.service;
 import com.example.magister.dto.CreateUserRequest;
 import com.example.magister.dto.UpdateUserRequest;
 import com.example.magister.dto.UserDTO;
-import com.example.magister.entity.EnrollmentStatus;
-import com.example.magister.entity.User;
-import com.example.magister.entity.UserRole;
+import com.example.magister.entity.*;
 import com.example.magister.exception.BusinessException;
 import com.example.magister.exception.ResourceNotFoundException;
 import com.example.magister.exception.UnauthorizedException;
-import com.example.magister.repository.GroupStudentRepository;
-import com.example.magister.repository.UserRepository;
+import com.example.magister.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,6 +26,10 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final GroupStudentRepository groupStudentRepository;
+    private final PaymentRepository paymentRepository;
+    private final AttendanceRepository attendanceRepository;
+    private final CoinRepository coinRepository;
+    private final GroupRepository groupRepository;
 
     @Transactional(readOnly = true)
     public List<UserDTO> getAllUsers() {
@@ -85,7 +86,6 @@ public class UserService {
                 .fullName(request.getFullName())
                 .phone(request.getPhone())
                 .role(request.getRole())
-                .active(true)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -165,10 +165,6 @@ public class UserService {
         if (request.getRole() != null) {
             user.setRole(request.getRole());
         }
-
-        if (request.getActive() != null) {
-            user.setActive(request.getActive());
-        }
     }
 
     private boolean canUpdateUser(User currentUser, User targetUser) {
@@ -198,9 +194,52 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
-        user.setActive(false);
-        userRepository.save(user);
-        log.info("User deactivated: {}", user.getEmail());
+        cascadeDeleteUser(user);
+        log.info("User deleted: {}", user.getEmail());
+    }
+
+    @Transactional
+    public void deleteUser(Long userId, Long currentUserId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUserId));
+
+        if (currentUser.getRole() == UserRole.ADMIN) {
+            cascadeDeleteUser(user);
+        } else if (currentUser.getRole() == UserRole.TEACHER && user.getRole() == UserRole.STUDENT) {
+            if (!isStudentOfTeacher(currentUserId, userId)) {
+                throw new UnauthorizedException("You can only delete your own students");
+            }
+            cascadeDeleteUser(user);
+        } else {
+            throw new UnauthorizedException("You don't have permission to delete this user");
+        }
+
+        log.info("User {} deleted by user {}", userId, currentUserId);
+    }
+
+    private void cascadeDeleteUser(User user) {
+        Long userId = user.getId();
+
+        // Delete records where user is a student
+        paymentRepository.deleteByStudentId(userId);
+        attendanceRepository.deleteByStudentId(userId);
+        coinRepository.deleteByStudentId(userId);
+        groupStudentRepository.deleteByStudentId(userId);
+
+        // Delete records where user is a teacher
+        if (user.getRole() == UserRole.TEACHER) {
+            paymentRepository.deleteByTeacherId(userId);
+            attendanceRepository.deleteByMarkedById(userId);
+            coinRepository.deleteByTeacherId(userId);
+
+            // Delete groups owned by this teacher (cascades to group_students via entity)
+            List<Group> teacherGroups = groupRepository.findByTeacherId(userId);
+            groupRepository.deleteAll(teacherGroups);
+        }
+
+        userRepository.delete(user);
     }
 
     private UserDTO mapToUserDTO(User user) {
@@ -210,7 +249,6 @@ public class UserService {
         dto.setFullName(user.getFullName());
         dto.setPhone(user.getPhone());
         dto.setRole(user.getRole());
-        dto.setActive(user.getActive());
         return dto;
     }
 }

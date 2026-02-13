@@ -18,4 +18,8 @@ public interface CoinRepository extends JpaRepository<Coin, Long> {
 
     @Query("SELECT c.student, SUM(c.amount) as total FROM Coin c WHERE c.group.id = :groupId GROUP BY c.student ORDER BY total DESC")
     List<Object[]> getLeaderboardByGroup(Long groupId);
+
+    void deleteByStudentId(Long studentId);
+
+    void deleteByTeacherId(Long teacherId);
 }

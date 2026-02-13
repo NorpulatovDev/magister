@@ -32,9 +32,6 @@ public class User {
     @Column(nullable = false)
     private UserRole role;
     
-    @Column(nullable = false)
-    private Boolean active = true;
-    
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
     
