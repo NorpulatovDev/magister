@@ -86,6 +86,13 @@ public class CoinService {
     }
 
     @Transactional(readOnly = true)
+    public List<CoinDTO> getCoinsByStudentAndGroup(Long studentId, Long groupId) {
+        return coinRepository.findByStudentIdAndGroupId(studentId, groupId).stream()
+                .map(this::mapToCoinDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public List<CoinDTO> getCoinsByGroup(Long groupId) {
         return coinRepository.findByGroupId(groupId).stream()
                 .map(this::mapToCoinDTO)

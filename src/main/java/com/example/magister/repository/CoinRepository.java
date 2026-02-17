@@ -13,6 +13,8 @@ public interface CoinRepository extends JpaRepository<Coin, Long> {
 
     List<Coin> findByGroupId(Long groupId);
 
+    List<Coin> findByStudentIdAndGroupId(Long studentId, Long groupId);
+
     @Query("SELECT SUM(c.amount) FROM Coin c WHERE c.student.id = :studentId")
     Integer getTotalCoinsByStudent(Long studentId);
 

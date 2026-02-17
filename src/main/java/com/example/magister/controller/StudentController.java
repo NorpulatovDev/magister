@@ -59,6 +59,14 @@ public class StudentController {
         return ResponseEntity.ok(coinService.getCoinsByStudent(studentId));
     }
 
+    @GetMapping("/coins/group/{groupId}")
+    @Operation(summary = "Get my coins by group")
+    public ResponseEntity<List<CoinDTO>> getMyCoinsByGroup(
+            @RequestHeader("X-User-Id") Long studentId,
+            @PathVariable Long groupId) {
+        return ResponseEntity.ok(coinService.getCoinsByStudentAndGroup(studentId, groupId));
+    }
+
     @GetMapping("/coins/summary")
     @Operation(summary = "Get coin summary")
     public ResponseEntity<CoinSummary> getCoinSummary(@RequestHeader("X-User-Id") Long studentId) {
