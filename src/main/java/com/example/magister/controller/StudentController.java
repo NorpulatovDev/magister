@@ -61,6 +61,14 @@ public class StudentController {
         return ResponseEntity.ok(paymentService.getPaymentsByStudent(studentId));
     }
 
+    @GetMapping("/payments/group/{groupId}")
+    @Operation(summary = "Get my payments by group")
+    public ResponseEntity<List<PaymentDTO>> getMyPaymentsByGroup(
+            @RequestHeader("X-User-Id") Long studentId,
+            @PathVariable Long groupId) {
+        return ResponseEntity.ok(paymentService.getPaymentsByStudentAndGroup(studentId, groupId));
+    }
+
     @GetMapping("/coins")
     @Operation(summary = "Get my coins")
     public ResponseEntity<List<CoinDTO>> getMyCoins(@RequestHeader("X-User-Id") Long studentId) {

@@ -86,6 +86,21 @@ public class PaymentService {
     }
 
     @Transactional(readOnly = true)
+    public List<PaymentDTO> getPaymentsByStudentAndGroup(Long studentId, Long groupId) {
+        groupRepository.findById(groupId)
+                .orElseThrow(() -> new ResourceNotFoundException("Group", "id", groupId));
+
+        if (!groupStudentRepository.existsByGroupIdAndStudentIdAndStatus(
+                groupId, studentId, EnrollmentStatus.ACTIVE)) {
+            throw new BusinessException("Student is not enrolled in this group");
+        }
+
+        return paymentRepository.findByStudentIdAndGroupId(studentId, groupId).stream()
+                .map(this::mapToPaymentDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public List<PaymentDTO> getPaymentsByTeacher(Long teacherId) {
         return paymentRepository.findByTeacherId(teacherId).stream()
                 .map(this::mapToPaymentDTO)

@@ -15,6 +15,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     List<Payment> findByGroupId(Long groupId);
 
+    List<Payment> findByStudentIdAndGroupId(Long studentId, Long groupId);
+
     @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.student.id = :studentId")
     Double getTotalPaymentsByStudent(Long studentId);
 
