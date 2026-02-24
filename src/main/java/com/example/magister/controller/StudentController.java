@@ -40,6 +40,14 @@ public class StudentController {
         return ResponseEntity.ok(attendanceService.getAttendanceByStudent(studentId));
     }
 
+    @GetMapping("/attendance/group/{groupId}")
+    @Operation(summary = "Get my attendance by group")
+    public ResponseEntity<List<AttendanceDTO>> getMyAttendanceByGroup(
+            @RequestHeader("X-User-Id") Long studentId,
+            @PathVariable Long groupId) {
+        return ResponseEntity.ok(attendanceService.getAttendanceByStudentAndGroup(studentId, groupId));
+    }
+
     @GetMapping("/attendance/summary")
     @Operation(summary = "Get attendance summary")
     public ResponseEntity<AttendanceSummary> getAttendanceSummary(

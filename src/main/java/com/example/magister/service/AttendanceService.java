@@ -114,6 +114,21 @@ public class AttendanceService {
         }
 
         @Transactional(readOnly = true)
+        public List<AttendanceDTO> getAttendanceByStudentAndGroup(Long studentId, Long groupId) {
+                groupRepository.findById(groupId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Group", "id", groupId));
+
+                if (!groupStudentRepository.existsByGroupIdAndStudentIdAndStatus(
+                                groupId, studentId, EnrollmentStatus.ACTIVE)) {
+                        throw new BusinessException("Student is not enrolled in this group");
+                }
+
+                return attendanceRepository.findByStudentIdAndGroupId(studentId, groupId).stream()
+                                .map(this::mapToAttendanceDTO)
+                                .collect(Collectors.toList());
+        }
+
+        @Transactional(readOnly = true)
         public List<AttendanceDTO> getAttendanceByGroup(Long groupId) {
                 return attendanceRepository.findByGroupId(groupId).stream()
                                 .map(this::mapToAttendanceDTO)
