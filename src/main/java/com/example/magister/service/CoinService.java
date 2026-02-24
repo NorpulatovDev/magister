@@ -3,6 +3,7 @@ package com.example.magister.service;
 import com.example.magister.dto.AwardCoinsRequest;
 import com.example.magister.dto.CoinDTO;
 import com.example.magister.dto.CoinSummary;
+import com.example.magister.dto.CoinsByGroupDTO;
 import com.example.magister.dto.LeaderboardEntryDTO;
 import com.example.magister.entity.Coin;
 import com.example.magister.entity.EnrollmentStatus;
@@ -21,7 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -101,6 +104,27 @@ public class CoinService {
     }
 
     @Transactional(readOnly = true)
+    public List<CoinsByGroupDTO> getCoinsByStudentGrouped(Long studentId) {
+        List<Coin> coins = coinRepository.findByStudentId(studentId);
+
+        Map<Long, List<Coin>> coinsByGroup = coins.stream()
+                .collect(Collectors.groupingBy(coin -> coin.getGroup().getId()));
+
+        List<CoinsByGroupDTO> result = new ArrayList<>();
+        for (Map.Entry<Long, List<Coin>> entry : coinsByGroup.entrySet()) {
+            List<Coin> groupCoins = entry.getValue();
+            CoinsByGroupDTO dto = new CoinsByGroupDTO();
+            dto.setGroupId(entry.getKey());
+            dto.setGroupName(groupCoins.get(0).getGroup().getName());
+            dto.setTotalCoins(groupCoins.stream().mapToInt(Coin::getAmount).sum());
+            dto.setCoins(groupCoins.stream().map(this::mapToCoinDTO).collect(Collectors.toList()));
+            result.add(dto);
+        }
+
+        return result;
+    }
+
+    @Transactional(readOnly = true)
     public List<CoinDTO> getCoinsByGroup(Long groupId) {
         return coinRepository.findByGroupId(groupId).stream()
                 .map(this::mapToCoinDTO)
@@ -131,6 +155,19 @@ public class CoinService {
                         .collect(Collectors.toList()));
 
         return summary;
+    }
+
+    @Transactional(readOnly = true)
+    public List<LeaderboardEntryDTO> getGroupLeaderboardForStudent(Long studentId, Long groupId) {
+        groupRepository.findById(groupId)
+                .orElseThrow(() -> new ResourceNotFoundException("Group", "id", groupId));
+
+        if (!groupStudentRepository.existsByGroupIdAndStudentIdAndStatus(
+                groupId, studentId, EnrollmentStatus.ACTIVE)) {
+            throw new BusinessException("Student is not enrolled in this group");
+        }
+
+        return getGroupLeaderboard(groupId);
     }
 
     @Transactional(readOnly = true)

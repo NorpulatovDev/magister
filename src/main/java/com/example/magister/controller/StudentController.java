@@ -67,6 +67,20 @@ public class StudentController {
         return ResponseEntity.ok(coinService.getCoinsByStudentAndGroup(studentId, groupId));
     }
 
+    @GetMapping("/coins/leaderboard/{groupId}")
+    @Operation(summary = "Get group leaderboard")
+    public ResponseEntity<List<LeaderboardEntryDTO>> getGroupLeaderboard(
+            @RequestHeader("X-User-Id") Long studentId,
+            @PathVariable Long groupId) {
+        return ResponseEntity.ok(coinService.getGroupLeaderboardForStudent(studentId, groupId));
+    }
+
+    @GetMapping("/coins/grouped")
+    @Operation(summary = "Get my coins grouped by group")
+    public ResponseEntity<List<CoinsByGroupDTO>> getMyCoinsGrouped(@RequestHeader("X-User-Id") Long studentId) {
+        return ResponseEntity.ok(coinService.getCoinsByStudentGrouped(studentId));
+    }
+
     @GetMapping("/coins/summary")
     @Operation(summary = "Get coin summary")
     public ResponseEntity<CoinSummary> getCoinSummary(@RequestHeader("X-User-Id") Long studentId) {
