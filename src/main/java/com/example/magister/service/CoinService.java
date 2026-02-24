@@ -87,6 +87,14 @@ public class CoinService {
 
     @Transactional(readOnly = true)
     public List<CoinDTO> getCoinsByStudentAndGroup(Long studentId, Long groupId) {
+        groupRepository.findById(groupId)
+                .orElseThrow(() -> new ResourceNotFoundException("Group", "id", groupId));
+
+        if (!groupStudentRepository.existsByGroupIdAndStudentIdAndStatus(
+                groupId, studentId, EnrollmentStatus.ACTIVE)) {
+            throw new BusinessException("Student is not enrolled in this group");
+        }
+
         return coinRepository.findByStudentIdAndGroupId(studentId, groupId).stream()
                 .map(this::mapToCoinDTO)
                 .collect(Collectors.toList());
